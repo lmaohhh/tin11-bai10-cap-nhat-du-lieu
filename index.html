@@ -1,1 +1,867 @@
-PLACEHOLDER
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cập nhật dữ liệu — Tin học 11 · Bài 10</title>
+<meta name="description" content="Bài 10: Lưu trữ dữ liệu và khai thác thông tin phục vụ quản lí — Phần 1: Cập nhật dữ liệu. Bảng điểm lớp 11A, thao tác thêm · xoá · sửa.">
+<meta property="og:title" content="Cập nhật dữ liệu — Tin học 11 · Bài 10">
+<meta property="og:description" content="Sổ điểm lớp 11A: xoá, sửa, thêm — ba thao tác của cập nhật dữ liệu.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://lmaohhh.github.io/tin11-bai10-cap-nhat-du-lieu/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#0A1411">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230E1B17'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='34' fill='%23F3B64E' text-anchor='middle'%3E10%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600;1,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============ tokens ============ */
+:root{
+  --ink:#0A1411;
+  --ink-2:#0E1C18;
+  --paper:#F4EAD7;
+  --paper-2:#E9DAC0;
+  --chalk:#F2F6EF;
+  --muted:#B7C9BF;
+  --muted-2:#8FA79C;
+  --amber:#F3B64E;
+  --amber-deep:#C98A22;
+  --red:#E4573F;
+  --red-deep:#B23A26;
+  --mint:#7FD3AE;
+  --line:rgba(242,246,239,.16);
+  --serif:"Playfair Display",Georgia,"Times New Roman",serif;
+  --sans:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html,body{height:100%}
+body{margin:0;background:#040907;overflow:hidden;font-family:var(--sans);color:var(--chalk)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:60;background:radial-gradient(120% 100% at 50% 45%,transparent 42%,rgba(0,0,0,.52) 100%)}
+::selection{background:var(--amber);color:#1d1607}
+
+/* ============ stage ============ */
+#stage{
+  position:absolute;left:50%;top:50%;width:1920px;height:1080px;
+  transform:translate(-50%,-50%);transform-origin:center center;
+  background:var(--ink);overflow:hidden;isolation:isolate;box-shadow:0 40px 120px rgba(0,0,0,.7);
+}
+#stage::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(1100px 680px at 80% 8%,rgba(243,182,78,.11),transparent 62%),
+    radial-gradient(900px 620px at 8% 96%,rgba(127,211,174,.08),transparent 62%),
+    repeating-linear-gradient(0deg,rgba(242,246,239,.035) 0 1px,transparent 1px 68px),
+    repeating-linear-gradient(90deg,rgba(242,246,239,.035) 0 1px,transparent 1px 68px);
+}
+#stage::after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:1;opacity:.20;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+}
+
+/* ============ slides ============ */
+.slide{
+  position:absolute;inset:0;z-index:2;padding:84px 110px 92px;
+  display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;pointer-events:none;transform:translateY(26px) scale(.994);
+  transition:opacity .5s cubic-bezier(.22,.7,.24,1),transform .62s cubic-bezier(.22,.7,.24,1),visibility 0s linear .62s;
+}
+.slide.is-active{opacity:1;visibility:visible;pointer-events:auto;transform:none;transition:opacity .5s cubic-bezier(.22,.7,.24,1),transform .62s cubic-bezier(.22,.7,.24,1),visibility 0s}
+.body{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;padding-bottom:10px}
+
+[data-r]{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.75,.2,1);transition-delay:var(--d,0s)}
+.slide.is-active [data-r]{opacity:1;transform:none}
+
+/* ============ chrome ============ */
+.chrome{position:absolute;top:40px;left:110px;right:110px;z-index:20;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:rgba(242,246,239,.5);text-transform:uppercase;pointer-events:none}
+.chrome .b{display:flex;gap:12px;align-items:center}
+.chrome .b i{width:22px;height:1px;background:currentColor;display:inline-block}
+.chrome .counter{letter-spacing:.1em;font-size:12px}
+.chrome .counter b{color:var(--amber);font-weight:500}
+.chrome .counter span{color:rgba(242,246,239,.34)}
+.progress{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(242,246,239,.07);z-index:22}
+.progress i{display:block;height:100%;width:8.33%;background:linear-gradient(90deg,var(--amber-deep),var(--amber));transition:width .45s cubic-bezier(.3,.8,.3,1)}
+
+/* ============ type ============ */
+.kicker{font-family:var(--mono);font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);display:flex;align-items:center;gap:14px}
+.kicker .k-dot{width:8px;height:8px;background:var(--amber);border-radius:50%;box-shadow:0 0 0 5px rgba(243,182,78,.14)}
+.display{font-family:var(--serif);font-weight:700;letter-spacing:-.025em;line-height:.9;margin:0}
+.s-head{flex:none;margin-bottom:34px}
+.s-label{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--amber);margin-bottom:16px}
+.s-label::before{content:"";width:30px;height:1px;background:currentColor}
+h2{font-family:var(--serif);font-weight:700;font-size:88px;line-height:1.02;letter-spacing:-.02em;margin:0;max-width:1500px}
+h2 em{font-style:italic;color:var(--amber)}
+h2.sm{font-size:78px}
+.lead{font-size:31px;line-height:1.55;color:#D4E1D9;font-weight:300;max-width:1100px}
+.tiny{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:rgba(242,246,239,.5)}
+
+/* ============ paper ============ */
+.paper{position:relative;color:#23312B;border-radius:5px;background:radial-gradient(130% 120% at 0% 0%,#FCF5E6 0%,var(--paper) 46%,var(--paper-2) 100%);box-shadow:0 34px 70px rgba(0,0,0,.48),0 1px 0 rgba(255,255,255,.7) inset,0 0 0 1px rgba(120,95,55,.14)}
+.paper::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:.45;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .45 0 0 0 0 .3 0 0 0 .12 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23p)'/%3E%3C/svg%3E")}
+.tape{position:absolute;width:168px;height:40px;left:50%;top:-18px;transform:translateX(-50%) rotate(-2.4deg);background:rgba(243,182,78,.34);border-left:1px dashed rgba(80,60,20,.18);border-right:1px dashed rgba(80,60,20,.18);box-shadow:0 3px 10px rgba(0,0,0,.18);z-index:3}
+
+/* ============ cover ============ */
+.s-cover{padding:0;display:block}
+.cover{position:absolute;inset:0;display:grid;grid-template-columns:1.06fr .94fr;align-items:center;padding:0 110px}
+.cover-left{padding-bottom:8px;position:relative;z-index:3}
+.cover h1{font-size:176px;margin:26px 0 0}
+.cover h1 .line{display:block}
+.cover h1 .italic{font-style:italic;font-weight:600;color:var(--paper)}
+.cover h1 .accent{color:var(--amber);font-style:normal}
+.cover .lede{font-size:31px;color:#CFDDD5;font-weight:300;line-height:1.5;margin:30px 0 0}
+.cover .hr{width:120px;height:2px;background:linear-gradient(90deg,var(--amber),transparent);margin:38px 0 22px}
+.cover-right{position:relative;height:100%;display:flex;align-items:center;justify-content:center}
+.ghost-number{position:absolute;right:-64px;top:50%;transform:translateY(-50%);font-family:var(--serif);font-size:720px;line-height:1;font-weight:800;color:transparent;-webkit-text-stroke:2px rgba(242,246,239,.075);z-index:0;user-select:none}
+.cover-paper{width:660px;padding:46px 44px 42px;transform:rotate(-3.1deg);z-index:2}
+.cp-head{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:12px;letter-spacing:.16em;color:#7A6A4E;text-transform:uppercase;border-bottom:1px solid rgba(90,70,40,.25);padding-bottom:10px;margin-bottom:16px}
+.mini{width:100%;border-collapse:collapse;font-size:22px}
+.mini th{font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:.06em;color:#6C5B3E;text-align:left;padding:0 0 8px;border-bottom:1px solid rgba(90,70,40,.22)}
+.mini td{padding:14px 0;border-bottom:1px dotted rgba(90,70,40,.28);font-weight:500;color:#2C3A33}
+.mini td.n{font-family:var(--mono);text-align:center;font-weight:500}
+.mini th.n{text-align:center}
+.mini .cell-zero{position:relative;color:var(--red-deep);font-weight:700}
+.mini .cell-zero::after{content:"";position:absolute;left:50%;top:50%;width:42px;height:46px;transform:translate(-50%,-50%);border:2.5px solid var(--red);border-radius:50%;opacity:.85}
+.flag{position:absolute;right:34px;bottom:26px;font-family:var(--serif);font-style:italic;font-size:27px;color:var(--red-deep);transform:rotate(-4deg);z-index:4;text-shadow:0 1px 0 rgba(255,255,255,.4)}
+.cover-tag{position:absolute;right:16px;bottom:86px;font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:rgba(242,246,239,.38);writing-mode:vertical-rl;transform:rotate(180deg)}
+.start-hint{position:absolute;left:110px;bottom:56px;display:flex;align-items:center;gap:14px;color:rgba(242,246,239,.5);font-size:16px;z-index:4}
+kbd{font-family:var(--mono);font-size:12px;border:1px solid rgba(242,246,239,.28);border-bottom-width:2px;border-radius:5px;padding:3px 7px;color:rgba(242,246,239,.8);background:rgba(255,255,255,.04)}
+
+/* ============ slide 2 ============ */
+.s2{display:grid;grid-template-columns:1.15fr .85fr;gap:96px;align-items:center}
+.ledger{border-top:1px solid var(--line)}
+.lrow{display:grid;grid-template-columns:92px 1fr;gap:8px;padding:30px 0 28px;border-bottom:1px solid var(--line);align-items:baseline;transition:background .25s ease,padding-left .25s ease,opacity .5s ease,transform .6s ease}
+.lrow:hover{background:rgba(243,182,78,.05);padding-left:12px}
+.lnum{font-family:var(--mono);font-size:14px;color:rgba(243,182,78,.7);letter-spacing:.1em;padding-top:9px}
+.lrow h3{font-family:var(--serif);font-size:46px;font-weight:600;margin:0;letter-spacing:-.01em}
+.lrow p{margin:6px 0 0;font-size:23px;color:var(--muted);font-weight:300}
+.s2-side .big{font-family:var(--serif);font-size:60px;line-height:1.14;font-weight:600;letter-spacing:-.015em;margin:0}
+.s2-side .big em{color:var(--amber);font-style:italic}
+.s2-side .note{margin-top:26px;font-size:20px;line-height:1.6;color:var(--muted);max-width:450px;font-weight:300}
+.s2-side .note b{color:var(--chalk);font-weight:500}
+.s2-side .rule{width:64px;height:2px;background:var(--amber);margin-bottom:30px}
+
+/* ============ slide 3 ============ */
+.score-strip{display:grid;grid-template-columns:1.35fr 1fr 1fr;gap:26px;align-items:stretch}
+.score-card{background:rgba(242,246,239,.04);border:1px solid var(--line);border-radius:10px;padding:38px 34px 34px;position:relative;overflow:hidden}
+.score-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--amber);opacity:.75}
+.score-card.gk::before{background:var(--mint)}
+.score-card.ck::before{background:var(--red)}
+.sc-label{font-family:var(--mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:rgba(242,246,239,.68);margin-bottom:24px}
+.sc-cells{display:flex;gap:10px;flex-wrap:wrap}
+.sc-cells i{font-style:normal;font-family:var(--serif);font-size:58px;font-weight:700;line-height:1;min-width:68px;height:82px;display:flex;align-items:center;justify-content:center;border:1px dashed rgba(242,246,239,.26);border-radius:7px;color:var(--chalk)}
+.score-card p{margin:24px 0 0;font-size:19px;line-height:1.5;color:var(--muted);font-weight:300}
+.ask-card{margin-top:40px;background:var(--paper);color:#23312B;border-radius:8px;padding:32px 40px;display:flex;gap:28px;align-items:center;box-shadow:0 24px 50px rgba(0,0,0,.35)}
+.ask-card .q{font-family:var(--serif);font-size:52px;line-height:1;color:var(--red-deep);font-weight:700;flex:none}
+.ask-card p{margin:0;font-size:27px;line-height:1.45;font-weight:400;max-width:1180px}
+.ask-card b{font-weight:700}
+.ask-card .tag{margin-left:42px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A7757;border:1px solid rgba(90,70,40,.3);border-radius:999px;padding:8px 14px;white-space:nowrap;flex:none}
+
+/* ============ gradebook ============ */
+.gb-paper{padding:38px 44px 30px}
+.gb-title{font-size:17px;color:#6C5B3E;margin:0 0 14px;font-weight:500}
+.gradebook{width:100%;border-collapse:collapse;font-size:28px}
+.gradebook th{background:#E9C97F;color:#3A2C12;font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;padding:14px 10px;border:1px solid #C9A55B;text-align:center;line-height:1.25;vertical-align:middle}
+.gradebook th.name{text-align:left;padding-left:16px}
+.gradebook th .th-sub{display:block;font-size:9px;letter-spacing:.14em;opacity:.6;margin-top:3px;font-weight:500}
+.gradebook th.sub{background:#F0D69A;font-size:12px;color:#6A5426;padding:6px 10px;font-weight:600}
+.gradebook td{padding:14px 10px;border:1px solid #CDB894;text-align:center;font-family:var(--sans);font-weight:500;color:#2B3A33;background:#F7EFDF}
+.gradebook tbody tr:nth-child(even) td{background:#F1E5CF}
+.gradebook td.name{text-align:left;font-weight:600;padding-left:16px;white-space:nowrap}
+.gradebook td.num{font-family:var(--mono);font-size:25px;font-weight:500}
+.gradebook tr{transition:background .2s}
+.gradebook tr.row-hi td{background:#FBE2A8}
+.gradebook td.cont{font-family:var(--mono);letter-spacing:.6em;color:#8A7757;padding:10px 0}
+.gb-cap{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;font-size:15px;color:#6C5B3E}
+.gb-cap b{font-weight:600}
+.gb-cap span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8A7757}
+
+/* ============ errors ============ */
+.err-grid{display:grid;grid-template-columns:1fr 1fr;gap:34px}
+.err-card{background:rgba(242,246,239,.04);border:1px solid var(--line);border-radius:10px;padding:44px 44px 38px;position:relative;overflow:hidden}
+.err-card .tag{font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:var(--red);text-transform:uppercase;margin-bottom:26px;display:flex;align-items:center;gap:12px}
+.err-card .tag::before{content:"";width:26px;height:1px;background:var(--red)}
+.err-quote{font-family:var(--serif);font-size:41px;line-height:1.26;font-weight:500;margin:0 0 22px;letter-spacing:-.01em}
+.err-quote .strike{position:relative;color:rgba(242,246,239,.42)}
+.err-quote .strike::after{content:"";position:absolute;left:-2px;right:-2px;top:52%;height:2px;background:var(--red);transform:rotate(-1.6deg)}
+.err-quote .fix{color:var(--mint);border-bottom:2px solid rgba(127,211,174,.45)}
+.err-card p{margin:0;font-size:22px;line-height:1.55;color:var(--muted);font-weight:300}
+.err-card p b{color:var(--chalk);font-weight:600}
+.err-card .why{margin-top:22px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(242,246,239,.45)}
+.err-card.bad{border-color:rgba(228,87,63,.4);background:rgba(228,87,63,.06)}
+
+/* ============ op slides ============ */
+.op-stage{display:grid;grid-template-columns:.92fr 1.08fr;gap:84px;align-items:center}
+.op-demo{background:var(--paper);border-radius:10px;padding:46px 36px 54px;box-shadow:0 30px 60px rgba(0,0,0,.45);position:relative}
+.demo-head{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A7757;margin-bottom:46px}
+.demo-row{display:grid;grid-template-columns:1fr repeat(5,68px);gap:8px;align-items:center;font-size:20px;color:#2B3A33}
+.demo-row .nm{font-weight:600;white-space:nowrap;font-size:20px}
+.chip{height:68px;border:1px solid #CDB894;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:26px;font-weight:500;background:#FBF3E3;position:relative;transition:.25s}
+.chip.zero{cursor:pointer;color:var(--red-deep);font-weight:700;border-color:rgba(228,87,63,.5);background:#FBEAE2;box-shadow:0 0 0 4px rgba(228,87,63,.09)}
+.chip.zero:hover{background:#F7DDD2;transform:translateY(-2px)}
+.chip.zero::before{content:"chạm để xoá";position:absolute;top:-30px;left:50%;transform:translateX(-50%) rotate(-3deg);font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--red-deep);white-space:nowrap;border-bottom:1px solid rgba(178,58,38,.45);padding-bottom:2px}
+.chip .v{transition:opacity .28s ease,transform .28s ease}
+.chip .scratch{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:30px;color:var(--red);opacity:0;transform:scale(.7);transition:.25s}
+.chip.is-erased{border-style:dashed;background:#F2E7D3;border-color:#B9A483;box-shadow:none}
+.chip.is-erased .v{opacity:0;transform:translateY(-6px)}
+.chip.is-erased .scratch{opacity:.8;transform:scale(1)}
+.chip.is-erased::before{content:"chạm để hoàn tác"}
+.stamp{position:absolute;right:-18px;bottom:-18px;font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:var(--red);border:2px solid var(--red);border-radius:6px;padding:9px 14px;transform:rotate(-7deg);background:var(--paper);opacity:0;transition:.3s ease;text-transform:uppercase}
+.stamp.on{opacity:1;transform:rotate(-7deg) scale(1.02)}
+.op-copy .op-kicker{font-family:var(--mono);font-size:13px;letter-spacing:.18em;color:var(--red);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.op-copy .op-kicker::before{content:"";width:26px;height:1px;background:currentColor}
+.op-copy h3{font-family:var(--serif);font-size:64px;line-height:1.02;margin:0 0 24px;font-weight:700;letter-spacing:-.02em}
+.op-copy p{font-size:24px;line-height:1.6;color:#D4E1D9;font-weight:300;margin:0;max-width:660px}
+.op-copy .hint{margin-top:28px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(242,246,239,.5)}
+.op-copy .hint b{color:var(--amber);font-weight:500}
+
+/* name morph */
+.name-stage{background:var(--paper);border-radius:10px;padding:56px 46px 44px;box-shadow:0 30px 60px rgba(0,0,0,.45);position:relative}
+.name-label{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8A7757;margin-bottom:20px}
+.name-big{font-family:var(--serif);font-size:72px;line-height:1.12;color:#2B3A33;font-weight:600;white-space:nowrap;display:flex;align-items:baseline}
+.name-big .first{white-space:nowrap}
+.morph{position:relative;display:inline-grid;vertical-align:baseline;cursor:pointer;border-bottom:3px dashed rgba(228,87,63,.55);padding:0 6px 2px;transition:background .2s}
+.morph:hover{background:rgba(228,87,63,.07)}
+.morph span{grid-area:1/1;transition:opacity .32s ease,transform .42s cubic-bezier(.2,.8,.2,1)}
+.morph .new{opacity:0;transform:translateY(16px);color:var(--red-deep)}
+.name-big.fixed .morph .old{opacity:0;transform:translateY(-16px)}
+.name-big.fixed .morph .new{opacity:1;transform:none}
+.name-hint{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8A7757;margin-top:32px}
+.name-hint b{color:var(--red-deep)}
+.name-stamp{position:absolute;right:30px;top:28px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--red);border:2px solid var(--red);border-radius:5px;padding:7px 11px;transform:rotate(6deg);opacity:0;transition:.25s;text-transform:uppercase}
+.name-stamp.on{opacity:1}
+
+/* corrected table */
+.corr{display:grid;grid-template-columns:1.58fr .42fr;gap:52px;align-items:center}
+.obs{display:flex;flex-direction:column;gap:30px}
+.obs-card{border-left:2px solid var(--amber);padding:2px 0 2px 22px}
+.obs-card .n{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);text-transform:uppercase}
+.obs-card h4{font-family:var(--serif);font-size:29px;line-height:1.18;margin:8px 0 8px;font-weight:600}
+.obs-card p{margin:0;font-size:18px;line-height:1.55;color:var(--muted);font-weight:300}
+.obs-tag{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:rgba(242,246,239,.4);margin-bottom:2px}
+.gradebook td.blank{position:relative;background:#F6DED2!important;color:transparent}
+.gradebook td.blank::after{content:"";position:absolute;inset:8px 10px;border:1.5px dashed rgba(178,58,38,.6);border-radius:3px}
+.gradebook tbody tr.ghost td{background:rgba(228,87,63,.06)!important;border-top:1px dashed rgba(178,58,38,.55);border-bottom:1px dashed rgba(178,58,38,.55);color:rgba(178,58,38,.85);font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:7px 10px;text-align:left;padding-left:16px}
+.gradebook tbody tr.ghost td:first-child{text-align:center;text-decoration:line-through;padding-left:10px;font-size:16px;font-weight:700}
+.legend{display:flex;align-items:center;gap:10px;font-size:14px;color:#6C5B3E}
+.legend i{width:12px;height:12px;background:#F6DED2;border:1px dashed rgba(178,58,38,.6);border-radius:2px;display:inline-block}
+.legend .pin{font-family:var(--mono);font-size:12px;color:var(--red-deep);border:1px dashed rgba(178,58,38,.5);border-radius:3px;padding:0 5px;text-decoration:line-through}
+
+/* triad */
+.triad{display:grid;grid-template-columns:1fr 1.02fr;gap:84px;align-items:stretch}
+.verbs{display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+.verb{display:flex;align-items:center;gap:22px;padding:24px 28px;border:1px solid var(--line);border-radius:9px;background:rgba(242,246,239,.035);transition:.3s}
+.verb .vw{font-family:var(--serif);font-size:50px;font-weight:700;letter-spacing:-.01em;min-width:158px}
+.verb .vd{font-size:19px;color:var(--muted);line-height:1.45;font-weight:300}
+.verb .vn{font-family:var(--mono);font-size:18px;color:rgba(243,182,78,.6);margin-left:auto}
+.verb:hover{background:rgba(243,182,78,.07);transform:translateX(6px)}
+.verb.v1 .vw{color:var(--mint)}
+.verb.v2 .vw{color:var(--red)}
+.verb.v3 .vw{color:var(--amber)}
+.core{position:relative;background:var(--paper);color:#23312B;border-radius:12px;padding:46px 46px;box-shadow:0 36px 70px rgba(0,0,0,.45);transform:rotate(1.4deg);display:flex;flex-direction:column;justify-content:center}
+.core::before{content:"";position:absolute;left:-84px;top:50%;width:84px;height:1px;background:linear-gradient(90deg,transparent,rgba(243,182,78,.5))}
+.core .ck{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#8A7757;margin-bottom:14px}
+.core h3{font-family:var(--serif);font-size:58px;line-height:1;margin:0 0 20px;font-weight:700;letter-spacing:-.02em;color:var(--red-deep)}
+.core p{margin:0;font-size:20px;line-height:1.55;color:#3F4F47}
+.core .src{margin-top:18px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8A7757}
+.def{display:none}
+
+/* why */
+.why-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.why-card{border:1px solid var(--line);border-radius:10px;padding:40px 38px;background:rgba(242,246,239,.04);position:relative}
+.why-card .wn{font-family:var(--serif);font-size:68px;line-height:1;color:rgba(243,182,78,.3);font-weight:700;margin-bottom:14px}
+.why-card h3{font-family:var(--serif);font-size:37px;line-height:1.2;margin:0 0 12px;font-weight:600}
+.why-card p{margin:0;font-size:21px;line-height:1.6;color:var(--muted);font-weight:300}
+.why-card .src{margin-top:20px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(242,246,239,.36)}
+.why-banner{margin-top:32px;background:var(--amber);color:#241A05;border-radius:8px;padding:28px 38px;display:flex;align-items:center;gap:28px;box-shadow:0 20px 40px rgba(243,182,78,.12)}
+.why-banner .wq{font-family:var(--serif);font-size:33px;line-height:1.2;font-weight:700;white-space:nowrap}
+.why-banner p{margin:0;font-size:23px;font-weight:500}
+
+/* video */
+.vid-grid{display:grid;grid-template-columns:1.22fr .78fr;gap:64px;align-items:center}
+.video{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#08110E;border:1px solid rgba(242,246,239,.16);box-shadow:0 30px 70px rgba(0,0,0,.55);cursor:pointer}
+.video img{width:100%;height:100%;object-fit:cover;opacity:.6;filter:saturate(.75) contrast(1.05);transition:.4s}
+.video:hover img{opacity:.8;transform:scale(1.015)}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.video .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,14,11,.08),rgba(6,14,11,.82))}
+.play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:112px;height:112px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;box-shadow:0 16px 40px rgba(0,0,0,.5);transition:.3s}
+.video:hover .play{transform:translate(-50%,-50%) scale(1.07);background:var(--amber)}
+.play svg{width:38px;height:38px;margin-left:6px;fill:#1E2A24}
+.vmeta{position:absolute;left:32px;right:32px;bottom:26px;display:flex;justify-content:space-between;align-items:flex-end;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(242,246,239,.78)}
+.vmeta .dur{background:rgba(0,0,0,.55);padding:5px 8px;border-radius:4px;letter-spacing:.05em}
+.vid-side .vt{font-family:var(--serif);font-size:48px;line-height:1.15;margin:0 0 18px;font-weight:600}
+.vid-side p{font-size:21px;line-height:1.6;color:var(--muted);max-width:450px;font-weight:300;margin:0 0 26px}
+.watch{display:inline-flex;align-items:center;gap:12px;background:var(--paper);color:#23312B;border-radius:999px;padding:15px 24px;font-size:16px;font-weight:600;text-decoration:none;box-shadow:0 10px 26px rgba(0,0,0,.35);transition:.2s}
+.watch:hover{background:var(--amber);transform:translateY(-2px)}
+.watch span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:#6C5B3E;text-transform:uppercase}
+.vid-side .ch{margin-top:22px;font-size:11px;letter-spacing:.16em;color:rgba(242,246,239,.4);text-transform:uppercase;font-family:var(--mono)}
+
+/* end */
+.s-end{padding:0;display:block}
+.end{position:absolute;inset:0;display:grid;grid-template-columns:1.12fr .88fr;align-items:center;padding:0 110px}
+.end h2{font-size:128px;line-height:.92;margin:22px 0 0}
+.end h2 em{color:var(--amber)}
+.end .recap{display:flex;gap:14px;margin-top:36px;flex-wrap:wrap}
+.end .pill{border:1px solid rgba(242,246,239,.22);border-radius:999px;padding:13px 22px;font-size:15px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:rgba(242,246,239,.82)}
+.end .pill b{color:var(--amber);font-weight:500}
+.end .thanks{margin-top:44px;font-size:21px;color:var(--muted);font-weight:300}
+.end-art{position:relative;height:100%;display:flex;align-items:center;justify-content:center}
+.end-card{background:var(--paper);color:#23312B;padding:42px 40px;border-radius:8px;transform:rotate(2.4deg);width:570px;box-shadow:0 34px 70px rgba(0,0,0,.5)}
+.end-card .ek{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8A7757;margin-bottom:16px}
+.end-card h4{font-family:var(--serif);font-size:30px;line-height:1.32;margin:0 0 20px;font-weight:600}
+.end-card .three{display:flex;justify-content:space-between;border-top:1px solid rgba(90,70,40,.22);padding-top:16px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:#6C5B3E;text-transform:uppercase}
+.end-ghost{position:absolute;font-family:var(--serif);font-size:430px;color:transparent;-webkit-text-stroke:2px rgba(242,246,239,.06);right:-50px;top:50%;transform:translateY(-50%);font-style:italic;z-index:0}
+
+/* overview + notes */
+#overview{position:fixed;inset:0;z-index:90;background:rgba(4,9,7,.96);backdrop-filter:blur(6px);display:none;padding:48px 64px;overflow:auto}
+#overview.on{display:flex;flex-direction:column;justify-content:center;align-items:center}
+#overview h3{font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:rgba(242,246,239,.55);margin:0 0 24px;font-weight:400;width:100%;max-width:1560px}
+.ov-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;width:100%;max-width:1560px}
+.ov-card{position:relative;text-align:left;background:rgba(242,246,239,.045);border:1px solid rgba(242,246,239,.12);border-radius:9px;padding:22px 22px 24px;color:var(--chalk);cursor:pointer;transition:.2s;font-family:var(--sans);min-height:114px;display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+.ov-card:hover{background:rgba(243,182,78,.1);border-color:rgba(243,182,78,.55);transform:translateY(-3px)}
+.ov-card span{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.12em}
+.ov-card b{display:block;font-size:21px;font-weight:600;line-height:1.3}
+.ov-card.is-cur{border-color:var(--amber);background:rgba(243,182,78,.09)}
+.ov-card.is-cur::after{content:"đang chiếu";position:absolute;right:14px;top:16px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#241A05;background:var(--amber);border-radius:3px;padding:3px 6px}
+#overview .ov-help{margin-top:26px;width:100%;max-width:1560px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:rgba(242,246,239,.5);text-transform:uppercase}
+.ov-close{position:fixed;right:40px;top:34px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(242,246,239,.25);background:rgba(10,20,17,.8);color:rgba(242,246,239,.8);font-size:16px;cursor:pointer}
+.ov-close:hover{border-color:var(--amber);color:var(--amber)}
+#notes{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);z-index:85;width:min(1100px,92vw);background:rgba(10,20,17,.96);border:1px solid rgba(242,246,239,.16);border-radius:10px;padding:18px 24px;opacity:0;pointer-events:none;transition:.25s;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+#notes.on{opacity:1;transform:translate(-50%,0)}
+#notes b{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--amber);text-transform:uppercase;font-weight:500}
+#notes p{margin:8px 0 0;font-size:16px;line-height:1.5;color:#CFDDD5}
+#blackout{position:fixed;inset:0;background:#000;z-index:80;opacity:0;pointer-events:none;transition:opacity .25s}
+#blackout.on{opacity:1;pointer-events:auto}
+.hud{position:absolute;right:110px;bottom:48px;z-index:21;display:flex;gap:10px;align-items:center}
+.hud button{width:46px;height:46px;border-radius:50%;border:1px solid rgba(242,246,239,.2);background:rgba(10,20,17,.6);color:rgba(242,246,239,.7);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.hud button:hover{border-color:var(--amber);color:var(--amber);background:rgba(243,182,78,.1)}
+.hud .hint{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(242,246,239,.34);text-transform:uppercase;margin-left:8px}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.001s!important;animation-duration:.001s!important}
+  [data-r]{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<div id="stage">
+
+  <!-- 1 -->
+  <section class="slide s-cover is-active" data-title="Mở đầu" data-note="Chào lớp. Hôm nay chúng ta học Bài 10 — phần 1: Cập nhật dữ liệu. Đây là phần nền của cả chủ đề: muốn khai thác thông tin thì trước hết dữ liệu phải đúng.">
+    <div class="cover">
+      <div class="cover-left">
+        <div class="kicker"><span class="k-dot"></span>Tin học 11 · Chủ đề 4 · Bài 10</div>
+        <h1 class="display">
+          <span class="line">Cập nhật</span>
+          <span class="line italic">dữ liệu<span class="accent">.</span></span>
+        </h1>
+        <p class="lede">Lưu trữ dữ liệu và khai thác thông tin<br>phục vụ quản lí</p>
+        <div class="hr"></div>
+        <p class="tiny">Kết nối tri thức với cuộc sống · Trang 49–50</p>
+      </div>
+      <div class="cover-right">
+        <div class="ghost-number">10</div>
+        <div class="paper cover-paper">
+          <div class="tape"></div>
+          <div class="cp-head"><span>Sổ điểm · Lớp 11A</span><span>Học kì I</span></div>
+          <table class="mini">
+            <thead><tr><th>Họ và tên</th><th class="n">TX</th><th class="n">GK</th><th class="n">CK</th></tr></thead>
+            <tbody>
+              <tr><td>Dương Hồng Anh</td><td class="n">8</td><td class="n">9</td><td class="n">8</td></tr>
+              <tr><td>Nguyễn Kì Duyên</td><td class="n cell-zero">0</td><td class="n">10</td><td class="n">9</td></tr>
+              <tr><td>Bùi Quý Dương</td><td class="n">7</td><td class="n">6</td><td class="n">6</td></tr>
+            </tbody>
+          </table>
+          <div class="flag">sai?</div>
+        </div>
+        <div class="cover-tag">Phần 1 · Cập nhật dữ liệu</div>
+      </div>
+    </div>
+    <div class="start-hint"><kbd>→</kbd><kbd>Space</kbd><span>để bắt đầu</span></div>
+  </section>
+
+  <!-- 2 -->
+  <section class="slide" data-title="Quản lí ở khắp nơi" data-note="Trước khi vào thao tác, nhắc lại bối cảnh: mọi bài toán quản lí đều dựa trên dữ liệu. Có thể hỏi lớp thêm ví dụ ngoài sách.">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>02</b><span>/12</span></div></div>
+    <header class="s-head">
+      <span class="s-label">Bối cảnh</span>
+      <h2>Quản lí có mặt<br>ở <em>khắp nơi</em></h2>
+    </header>
+    <div class="body">
+      <div class="s2">
+        <div class="ledger">
+          <div class="lrow" data-r style="--d:.04s"><span class="lnum">01</span><div><h3>Cơ quan, tổ chức</h3><p>nhân viên · tài chính · thiết bị</p></div></div>
+          <div class="lrow" data-r style="--d:.10s"><span class="lnum">02</span><div><h3>Phòng bán vé</h3><p>chỗ ngồi trên chuyến bay, tàu xe</p></div></div>
+          <div class="lrow" data-r style="--d:.16s"><span class="lnum">03</span><div><h3>Bệnh viện</h3><p>hồ sơ bệnh án</p></div></div>
+          <div class="lrow" data-r style="--d:.22s"><span class="lnum">04</span><div><h3>Trường học</h3><p>học sinh và kết quả học tập</p></div></div>
+        </div>
+        <aside class="s2-side" data-r style="--d:.3s">
+          <div class="rule"></div>
+          <p class="big">Bài toán quản lí nào<br>cũng bắt đầu từ<br><em>dữ liệu</em>.</p>
+          <p class="note">Và dữ liệu ấy không đứng yên: có điểm mới, có sai sót, có thay đổi. Vì thế mới cần <b>cập nhật</b>.</p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="slide" data-title="Một con điểm, ba loại đánh giá" data-note="Cho lớp nhìn bảng điểm: mỗi bạn có 3 điểm thường xuyên, 1 giữa kì, 1 cuối kì. Đặt câu hỏi trong sách: có cần lưu trữ không, và lưu những gì?">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>03</b><span>/12</span></div></div>
+    <header class="s-head">
+      <span class="s-label">Thành phần dữ liệu</span>
+      <h2 class="sm">Một con điểm,<br>ba loại đánh giá</h2>
+    </header>
+    <div class="body">
+      <div class="score-strip">
+        <div class="score-card tx" data-r style="--d:.02s">
+          <div class="sc-label">ĐĐG thường xuyên</div>
+          <div class="sc-cells"><i>8</i><i>7</i><i>7</i></div>
+          <p>Ba cột điểm trong học kì</p>
+        </div>
+        <div class="score-card gk" data-r style="--d:.1s">
+          <div class="sc-label">ĐĐG giữa kì</div>
+          <div class="sc-cells"><i>9</i></div>
+          <p>Một con điểm</p>
+        </div>
+        <div class="score-card ck" data-r style="--d:.18s">
+          <div class="sc-label">ĐĐG cuối kì</div>
+          <div class="sc-cells"><i>8</i></div>
+          <p>Một con điểm</p>
+        </div>
+      </div>
+      <div class="ask-card" data-r style="--d:.3s">
+        <span class="q">?</span>
+        <p>Theo em, hoạt động này <b>có cần lưu trữ dữ liệu</b> không?<br>Nếu có, đó là những dữ liệu gì?</p>
+        <span class="tag">Thảo luận</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="slide" data-title="Bảng 10.1 — sổ điểm lớp 11A" data-note="Đây là bảng gốc. Chỉ vào cột ĐĐG thường xuyên: ba ô, có một ô bằng 0. Chưa nói vội — để lớp tự thấy chỗ bất thường.">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>04</b><span>/12</span></div></div>
+    <header class="s-head" style="margin-bottom:26px">
+      <span class="s-label">Dữ liệu gốc</span>
+      <h2 class="sm">Sổ điểm của lớp 11A</h2>
+    </header>
+    <div class="body">
+      <div class="gb-paper paper" data-r>
+        <p class="gb-title">Bảng 10.1. Bảng điểm môn Toán lớp 11A (học kì I)</p>
+        <table class="gradebook" id="gb1">
+          <thead>
+            <tr>
+              <th rowspan="2" style="width:78px">STT</th>
+              <th class="name" rowspan="2">Họ và tên</th>
+              <th colspan="3">ĐĐG thường xuyên</th>
+              <th rowspan="2" style="width:170px">ĐĐG giữa kì</th>
+              <th rowspan="2" style="width:170px">ĐĐG cuối kì</th>
+            </tr>
+            <tr>
+              <th class="sub" style="width:112px">1</th>
+              <th class="sub" style="width:112px">2</th>
+              <th class="sub" style="width:112px">3</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td class="name">Dương Hồng Anh</td><td class="num">8</td><td class="num">7</td><td class="num">7</td><td class="num">9</td><td class="num">8</td></tr>
+            <tr><td>2</td><td class="name">Lương Việt Anh</td><td class="num">5</td><td class="num">6</td><td class="num">5</td><td class="num">5</td><td class="num">5</td></tr>
+            <tr><td>3</td><td class="name">Nguyễn Kì Duyên</td><td class="num">7</td><td class="num">8</td><td class="num">0</td><td class="num">10</td><td class="num">9</td></tr>
+            <tr><td>4</td><td class="name">Bùi Quý Dương</td><td class="num">5</td><td class="num">7</td><td class="num">7</td><td class="num">6</td><td class="num">6</td></tr>
+            <tr><td>5</td><td class="name">Đỗ Hồng Dương</td><td class="num">7</td><td class="num">8</td><td class="num">6</td><td class="num">6</td><td class="num">7</td></tr>
+            <tr><td colspan="7" class="cont">…</td></tr>
+          </tbody>
+        </table>
+        <div class="gb-cap"><span><b>Nguồn:</b> SGK Tin học 11, tr. 49</span><span>chạm vào một dòng để đánh dấu</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="slide" data-title="Sai sót là chuyện thường" data-note="Hai lỗi điển hình: một điểm 0 không đúng (bạn nghỉ có lí do) và một cái tên bị gõ sai. Cả hai đều dẫn tới cùng một câu hỏi: sửa thế nào?">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>05</b><span>/12</span></div></div>
+    <header class="s-head">
+      <span class="s-label">Vấn đề</span>
+      <h2>Sai sót là<br>chuyện <em>thường</em></h2>
+    </header>
+    <div class="body">
+      <div class="err-grid">
+        <div class="err-card bad" data-r style="--d:.04s">
+          <div class="tag">Lỗi 01 · thừa dữ liệu</div>
+          <p class="err-quote">Điểm <span class="strike">0</span> của Nguyễn Kì Duyên</p>
+          <p>Bạn nghỉ học <b>có lí do</b>, nên điểm 0 không phản ánh đúng năng lực. Dữ liệu này cần được bỏ đi.</p>
+          <div class="why">→ thao tác: xoá</div>
+        </div>
+        <div class="err-card" data-r style="--d:.14s">
+          <div class="tag">Lỗi 02 · sai chính tả</div>
+          <p class="err-quote">Dương <span class="strike">Hồng</span> Anh<br><span class="fix">Dương Hoàng Anh</span></p>
+          <p>Tên trong danh sách bị gõ nhầm. Thực tế tên chính xác phải là <b>Dương Hoàng Anh</b>.</p>
+          <div class="why">→ thao tác: sửa</div>
+        </div>
+      </div>
+      <p class="tiny" data-r style="--d:.26s;margin-top:32px">Thao tác thứ ba — thêm — đến khi có học sinh mới hoặc cột điểm mới.</p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="slide" data-title="Thao tác 1 — Xoá" data-note="Mời một bạn lên chạm vào ô 0. Sau khi xoá, ô trống chứ không phải bằng 0 — đó là điểm cần nhấn: xoá dữ liệu khác với ghi giá trị 0.">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>06</b><span>/12</span></div></div>
+    <header class="s-head">
+      <span class="s-label">Thao tác 1</span>
+      <h2 class="sm">Xoá dữ liệu</h2>
+    </header>
+    <div class="body">
+      <div class="op-stage">
+        <div class="op-demo" data-no-advance data-r>
+          <div class="demo-head"><span>Sổ điểm · 11A</span><span>ĐĐG thường xuyên</span></div>
+          <div class="demo-row">
+            <span class="nm">Nguyễn Kì Duyên</span>
+            <span class="chip"><span class="v">7</span></span>
+            <span class="chip"><span class="v">8</span></span>
+            <span class="chip zero" data-action="erase" role="button" tabindex="0" aria-label="Xoá điểm 0"><span class="v">0</span><span class="scratch">↺</span></span>
+            <span class="chip"><span class="v">10</span></span>
+            <span class="chip"><span class="v">9</span></span>
+          </div>
+          <div class="stamp" id="eraseStamp">Đã xoá · 1 ô trống</div>
+        </div>
+        <div class="op-copy" data-r style="--d:.12s">
+          <div class="op-kicker">Xoá dữ liệu</div>
+          <h3>Bỏ đi cái<br>không đúng.</h3>
+          <p>Có thể phải xoá một dữ liệu điểm. Chẳng hạn xoá điểm 0 trong ĐĐG thường xuyên của Nguyễn Kì Duyên vì nghỉ học có lí do.</p>
+          <p class="hint" id="eraseHint">Chạm vào ô <b>0</b> để xoá khỏi sổ điểm</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section class="slide" data-title="Thao tác 2 — Sửa" data-note="Chạm vào từ Hồng để sửa. Nhấn mạnh: sửa là thay giá trị cũ bằng giá trị đúng, không phải xoá rồi thêm mới.">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>07</b><span>/12</span></div></div>
+    <header class="s-head">
+      <span class="s-label">Thao tác 2</span>
+      <h2 class="sm">Sửa dữ liệu</h2>
+    </header>
+    <div class="body">
+      <div class="op-stage">
+        <div class="name-stage" data-r>
+          <div class="name-label">Họ và tên · STT 1</div>
+          <div class="name-big" id="nameBig">
+            <span class="first">Dương&nbsp;</span><span class="morph" data-action="fix" role="button" tabindex="0" aria-label="Sửa Hồng thành Hoàng"><span class="old">Hồng</span><span class="new">Hoàng</span></span><span class="first">&nbsp;Anh</span>
+          </div>
+          <div class="name-hint">Chạm vào từ <b>gạch chân</b> để sửa · chạm lần nữa để hoàn tác</div>
+          <div class="name-stamp" id="nameStamp">Đã sửa</div>
+        </div>
+        <div class="op-copy" data-r style="--d:.12s">
+          <div class="op-kicker">Sửa dữ liệu</div>
+          <h3>Thay cái sai<br>bằng cái đúng.</h3>
+          <p>Có thể phải sửa một dữ liệu nào đó. Chẳng hạn trong danh sách có tên Dương Hồng Anh nhưng thực tế tên chính xác phải là Dương Hoàng Anh.</p>
+          <p class="hint" id="fixHint">Chạm vào <b>Hồng</b> để đổi thành <b>Hoàng</b></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section class="slide" data-title="Bảng 10.2 — sau khi chỉnh sửa" data-note="Điểm nhấn của tiết học: bảng sau khi sửa vẫn còn dấu vết. STT nhảy 3 → 5 nghĩa là một dòng đã bị xoá; các ô tô hồng là điểm đã bị xoá. Dữ liệu kể lại lịch sử của nó.">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>08</b><span>/12</span></div></div>
+    <header class="s-head" style="margin-bottom:24px">
+      <span class="s-label">Dữ liệu sau khi sửa</span>
+      <h2 class="sm">Dấu vết còn lại</h2>
+    </header>
+    <div class="body">
+      <div class="corr">
+        <div class="gb-paper paper" data-r>
+          <p class="gb-title">Bảng 10.2. Bảng điểm môn Toán lớp 11A (học kì I) sau khi chỉnh sửa</p>
+          <table class="gradebook">
+            <thead>
+              <tr>
+                <th rowspan="2" style="width:78px">STT</th>
+                <th class="name" rowspan="2">Họ và tên</th>
+                <th colspan="3">ĐĐG thường xuyên</th>
+                <th rowspan="2" style="width:164px">ĐĐG giữa kì</th>
+                <th rowspan="2" style="width:164px">ĐĐG cuối kì</th>
+              </tr>
+              <tr>
+                <th class="sub" style="width:112px">1</th>
+                <th class="sub" style="width:112px">2</th>
+                <th class="sub" style="width:112px">3</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>1</td><td class="name">Dương Hoàng Anh</td><td class="num">8</td><td class="num">7</td><td class="num">7</td><td class="num">9</td><td class="num">8</td></tr>
+              <tr><td>2</td><td class="name">Lương Việt Anh</td><td class="blank">·</td><td class="num">5</td><td class="num">6</td><td class="num">5</td><td class="num">5</td></tr>
+              <tr><td>3</td><td class="name">Nguyễn Kì Duyên</td><td class="num">7</td><td class="blank">·</td><td class="num">8</td><td class="num">10</td><td class="num">9</td></tr>
+              <tr class="ghost"><td>4</td><td colspan="6">STT 4 — dòng này đã bị xoá khỏi bảng</td></tr>
+              <tr><td>5</td><td class="name">Bùi Quý Dương</td><td class="num">5</td><td class="num">7</td><td class="num">7</td><td class="num">6</td><td class="num">6</td></tr>
+              <tr><td>6</td><td class="name">Đỗ Hồng Dương</td><td class="blank">·</td><td class="num">7</td><td class="num">8</td><td class="num">6</td><td class="num">7</td></tr>
+              <tr><td colspan="7" class="cont">…</td></tr>
+            </tbody>
+          </table>
+          <div class="gb-cap">
+            <span><b>Nguồn:</b> SGK Tin học 11, tr. 50</span>
+            <span class="legend"><i></i> ô tô hồng = điểm đã xoá</span>
+          </div>
+        </div>
+        <aside class="obs" data-r style="--d:.2s">
+          <div class="obs-tag">Quan sát</div>
+          <div class="obs-card">
+            <div class="n">01 · STT</div>
+            <h4>Thiếu hẳn số 4</h4>
+            <p>Một dòng đã bị xoá khỏi bảng — dấu vết còn lại là con số bị bỏ trống.</p>
+          </div>
+          <div class="obs-card">
+            <div class="n">02 · ô trống</div>
+            <h4>Ba ô mất điểm</h4>
+            <p>Ô trống không phải điểm 0. Đó là những điểm đã bị xoá khỏi dữ liệu.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 -->
+  <section class="slide" data-title="Ba thao tác, một khái niệm" data-note="Chốt khái niệm: thêm, xoá, chỉnh sửa — gọi chung là cập nhật dữ liệu. Đọc nguyên văn định nghĩa ở cuối trang 50.">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>09</b><span>/12</span></div></div>
+    <header class="s-head" style="margin-bottom:30px">
+      <span class="s-label">Khái niệm</span>
+      <h2 class="sm">Ba thao tác,<br>một khái niệm</h2>
+    </header>
+    <div class="body">
+      <div class="triad">
+        <div class="verbs">
+          <div class="verb v1" data-r style="--d:.02s"><span class="vw">Thêm</span><span class="vd">bổ sung dòng, cột hoặc giá trị mới</span><span class="vn">+</span></div>
+          <div class="verb v2" data-r style="--d:.1s"><span class="vw">Xoá</span><span class="vd">bỏ dữ liệu không còn đúng</span><span class="vn">−</span></div>
+          <div class="verb v3" data-r style="--d:.18s"><span class="vw">Sửa</span><span class="vd">thay giá trị cũ bằng giá trị đúng</span><span class="vn">✎</span></div>
+        </div>
+        <div class="core" data-r style="--d:.26s">
+          <div class="ck">Gọi chung là</div>
+          <h3>Cập nhật<br>dữ liệu</h3>
+          <p>“Việc thêm, xoá và chỉnh sửa dữ liệu tương tự như trên là những công việc thường được thực hiện với dữ liệu của tất cả các bài toán quản lí và chúng được gọi chung là cập nhật dữ liệu.”</p>
+          <div class="src">SGK Tin học 11 · tr. 50</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section class="slide" data-title="Vì sao phải cập nhật?" data-note="Hỏi lớp trước: nếu sổ điểm giữ nguyên điểm 0 sai thì chuyện gì xảy ra? Sau đó mới hiện hai lí do.">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>10</b><span>/12</span></div></div>
+    <header class="s-head">
+      <span class="s-label">Lí do</span>
+      <h2>Vì sao phải<br><em>cập nhật</em>?</h2>
+    </header>
+    <div class="body">
+      <div class="why-grid">
+        <div class="why-card" data-r style="--d:.04s">
+          <div class="wn">01</div>
+          <h3>Dữ liệu có thể sai</h3>
+          <p>Ghi chép có thể có sai sót, nhầm lẫn — một điểm 0 bị ghi nhầm, một cái tên bị gõ sai. Cập nhật để sửa lại cho đúng.</p>
+          <div class="src">SGK tr. 49</div>
+        </div>
+        <div class="why-card" data-r style="--d:.14s">
+          <div class="wn">02</div>
+          <h3>Dữ liệu luôn mới</h3>
+          <p>Việc ghi điểm diễn ra thường xuyên, mỗi khi có ĐĐG thường xuyên, giữa kì hay cuối kì. Sổ điểm không bao giờ đứng yên.</p>
+          <div class="src">SGK tr. 49</div>
+        </div>
+      </div>
+      <div class="why-banner" data-r style="--d:.26s">
+        <div class="wq">Kết luận</div>
+        <p>Cập nhật dữ liệu thường xuyên để thông tin khai thác được luôn chính xác và hữu ích.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 -->
+  <section class="slide" data-title="Xem lại toàn bài" data-note="Trang này để dành: nếu còn thời gian thì mở video từ đầu; nếu không, bỏ qua và sang phần kết.">
+    <div class="chrome"><div class="b"><i></i><span>Bài 10 · Cập nhật dữ liệu</span></div><div class="counter"><b>11</b><span>/12</span></div></div>
+    <header class="s-head" style="margin-bottom:30px">
+      <span class="s-label">Xem lại</span>
+      <h2 class="sm">Bài giảng đầy đủ</h2>
+    </header>
+    <div class="body">
+      <div class="vid-grid">
+        <div class="video" data-action="play" data-no-advance role="button" tabindex="0" aria-label="Phát video bài giảng">
+          <img src="https://i.ytimg.com/vi/3eW5GdM1MGE/maxresdefault.jpg" alt="Video bài giảng Bài 10" onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/3eW5GdM1MGE/hqdefault.jpg'">
+          <div class="veil"></div>
+          <div class="play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          <div class="vmeta"><span>Vung Nguyen Van</span><span class="dur">12:36</span></div>
+        </div>
+        <aside class="vid-side" data-r style="--d:.15s">
+          <p class="vt">Xem lại sau tiết học</p>
+          <p>Video đi qua cả bài 10: lưu trữ, cập nhật, truy xuất và khai thác thông tin.</p>
+          <a class="watch" href="https://www.youtube.com/watch?v=3eW5GdM1MGE" target="_blank" rel="noopener">Mở trên YouTube <span>↗</span></a>
+          <div class="ch">youtube.com/watch?v=3eW5GdM1MGE</div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 -->
+  <section class="slide s-end" data-title="Kết" data-note="Chốt lại 3 thao tác và định nghĩa. Cảm ơn lớp.">
+    <div class="end">
+      <div>
+        <div class="kicker"><span class="k-dot"></span>Tóm lại · Bài 10 · Phần 1</div>
+        <h2 class="display">Thêm · Xoá · Sửa<br><em>là cập nhật.</em></h2>
+        <div class="recap">
+          <span class="pill"><b>01</b> Dữ liệu cần lưu trữ</span>
+          <span class="pill"><b>02</b> Dữ liệu cần cập nhật</span>
+          <span class="pill"><b>03</b> Cập nhật để luôn đúng</span>
+        </div>
+        <p class="thanks">Cảm ơn lớp — hẹn gặp ở phần 2: Truy xuất dữ liệu và khai thác thông tin.</p>
+      </div>
+      <div class="end-art">
+        <div class="end-ghost">11A</div>
+        <div class="end-card">
+          <div class="ek">Sổ điểm · 11A</div>
+          <h4>Bảng 10.2 không chỉ là bảng điểm — nó là dấu vết của những lần sửa.</h4>
+          <div class="three"><span>STT 3 → 5</span><span>3 ô trống</span><span>1 cái tên đúng</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="progress"><i id="bar"></i></div>
+  <div class="hud">
+    <button data-nav="prev" aria-label="Trang trước">←</button>
+    <button data-nav="next" aria-label="Trang sau">→</button>
+    <span class="hint">tổng quan</span>
+  </div>
+</div>
+
+<div id="overview">
+  <h3>Chọn trang · Bài 10 · Cập nhật dữ liệu</h3>
+  <div class="ov-grid" id="ovGrid"></div>
+  <div class="ov-help">← → điều hướng · nhấp vào thẻ để chuyển trang · phím O hoặc Esc để đóng · F toàn màn hình · B tắt màn hình · N ghi chú</div>
+  <button id="ovClose" class="ov-close" type="button" aria-label="Đóng tổng quan">✕</button>
+</div>
+<div id="notes"><b>Ghi chú</b><p></p></div>
+<div id="blackout"></div>
+
+<script>
+(function(){
+  "use strict";
+  var stage=document.getElementById('stage');
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var total=slides.length;
+  var cur=0;
+  var bar=document.getElementById('bar');
+  var notes=document.getElementById('notes');
+  var ov=document.getElementById('overview');
+  var blk=document.getElementById('blackout');
+
+  function pad(n){return (n<10?'0':'')+n}
+  function fit(){
+    var s=Math.min(window.innerWidth/1920, window.innerHeight/1080);
+    stage.style.transform='translate(-50%,-50%) scale('+s+')';
+  }
+  window.addEventListener('resize',fit); fit();
+
+  function paintChrome(){
+    var boxes=document.querySelectorAll('.chrome .counter b');
+    for(var i=0;i<boxes.length;i++){boxes[i].textContent=pad(cur+1);}
+    bar.style.width=((cur+1)/total*100)+'%';
+    notes.querySelector('p').textContent=slides[cur].getAttribute('data-note')||'';
+    var cards=ov.querySelectorAll('.ov-card');
+    for(var k=0;k<cards.length;k++){cards[k].classList.toggle('is-cur',k===cur);}
+  }
+
+  function go(n,force){
+    n=Math.max(0,Math.min(total-1,n));
+    if(n===cur&&!force) return;
+    slides[cur].classList.remove('is-active');
+    slides[cur].setAttribute('aria-hidden','true');
+    cur=n;
+    slides[cur].classList.add('is-active');
+    slides[cur].removeAttribute('aria-hidden');
+    paintChrome();
+    if(history.replaceState){history.replaceState(null,'','#'+(cur+1));}
+  }
+
+  var grid=document.getElementById('ovGrid');
+  slides.forEach(function(s,i){
+    var b=document.createElement('button');
+    b.className='ov-card'; b.type='button';
+    b.innerHTML='<span>'+pad(i+1)+'</span><b>'+(s.getAttribute('data-title')||'')+'</b>';
+    b.addEventListener('click',function(){ov.classList.remove('on');go(i,true);});
+    grid.appendChild(b);
+  });
+  function toggleOv(force){if(typeof force==='boolean'){ov.classList.toggle('on',force);}else{ov.classList.toggle('on');}}
+  document.getElementById('ovClose').addEventListener('click',function(){ov.classList.remove('on');});
+  ov.addEventListener('click',function(e){if(e.target===ov){ov.classList.remove('on');}});
+
+  document.addEventListener('keydown',function(e){
+    var k=e.key, onControl=e.target&&e.target.tagName==='A';
+    if(k==='ArrowRight'||k==='PageDown'||k===' '||k==='Enter'){if(onControl)return;e.preventDefault();go(cur+1);}
+    else if(k==='ArrowLeft'||k==='PageUp'){e.preventDefault();go(cur-1);}
+    else if(k==='Home'){e.preventDefault();go(0);}
+    else if(k==='End'){e.preventDefault();go(total-1);}
+    else if(k==='o'||k==='O'||k==='Escape'){e.preventDefault();toggleOv();}
+    else if(k==='f'||k==='F'){e.preventDefault();if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}else{document.exitFullscreen&&document.exitFullscreen();}}
+    else if(k==='b'||k==='B'){e.preventDefault();blk.classList.toggle('on');}
+    else if(k==='n'||k==='N'){e.preventDefault();notes.classList.toggle('on');}
+    else if(k==='r'||k==='R'){e.preventDefault();resetSlide();}
+  });
+
+  document.addEventListener('click',function(e){
+    var nav=e.target.closest('[data-nav]');
+    if(nav){go(cur+(nav.getAttribute('data-nav')==='next'?1:-1));return;}
+
+    var actEl=e.target.closest('[data-action]');
+    if(actEl){
+      var act=actEl.getAttribute('data-action');
+      if(act==='erase'){
+        actEl.classList.toggle('is-erased');
+        var off=actEl.classList.contains('is-erased');
+        document.getElementById('eraseStamp').classList.toggle('on',off);
+        document.getElementById('eraseHint').innerHTML=off?'Đã xoá · chạm vào ô trống để <b>hoàn tác</b>':'Chạm vào ô <b>0</b> để xoá khỏi sổ điểm';
+      }
+      if(act==='fix'){
+        var nb=document.getElementById('nameBig');
+        nb.classList.toggle('fixed');
+        var on=nb.classList.contains('fixed');
+        document.getElementById('nameStamp').classList.toggle('on',on);
+        document.getElementById('fixHint').innerHTML=on?'Đã sửa thành <b>Hoàng</b> · chạm lần nữa để hoàn tác':'Chạm vào <b>Hồng</b> để đổi thành <b>Hoàng</b>';
+      }
+      if(act==='play'){playVideo(actEl);}
+      e.stopPropagation(); return;
+    }
+
+    /* row marking in gradebooks (presenter tool) */
+    var tr=e.target.closest('.gradebook tbody tr');
+    if(tr&&!tr.querySelector('.cont')){tr.classList.toggle('row-hi');return;}
+
+    if(e.target===slides[cur]||e.target.classList.contains('cover')||e.target.classList.contains('end')){go(cur+1);}
+  });
+
+  function playVideo(box){
+    if(box.dataset.loaded) return;
+    box.dataset.loaded='1';
+    box.innerHTML='<iframe src="https://www.youtube-nocookie.com/embed/3eW5GdM1MGE?autoplay=1&rel=0&modestbranding=1" title="Bài giảng Bài 10" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>';
+  }
+
+  function resetSlide(){
+    var e=slides[cur].querySelectorAll('.is-erased');for(var i=0;i<e.length;i++)e[i].classList.remove('is-erased');
+    var s=slides[cur].querySelectorAll('.fixed');for(var j=0;j<s.length;j++)s[j].classList.remove('fixed');
+    var st=document.getElementById('eraseStamp');if(st)st.classList.remove('on');
+    var ns=document.getElementById('nameStamp');if(ns)ns.classList.remove('on');
+    var eh=document.getElementById('eraseHint');if(eh)eh.innerHTML='Chạm vào ô <b>0</b> để xoá khỏi sổ điểm';
+    var fh=document.getElementById('fixHint');if(fh)fh.innerHTML='Chạm vào <b>Hồng</b> để đổi thành <b>Hoàng</b>';
+  }
+
+  var h=parseInt((location.hash||'').replace('#',''),10);
+  if(h>=1&&h<=total){cur=h-1;}
+  slides.forEach(function(s,i){s.classList.toggle('is-active',i===cur);if(i!==cur)s.setAttribute('aria-hidden','true');});
+  paintChrome();
+
+  var x0=null;
+  stage.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;},{passive:true});
+  stage.addEventListener('touchend',function(e){
+    if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;
+    if(Math.abs(dx)>60){go(cur+(dx<0?1:-1));}
+    x0=null;
+  },{passive:true});
+})();
+</script>
+</body>
+</html>
